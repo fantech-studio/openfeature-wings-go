@@ -40,7 +40,7 @@ type (
 )
 
 type Client struct {
-	Cli  http.Client
+	Cli  *http.Client
 	Host string
 }
 

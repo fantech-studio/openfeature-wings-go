@@ -13,8 +13,13 @@ type Provider struct {
 }
 
 // NewProvider returns a new instance of the Provider for Wings implementing the Open Feature
-func NewProvider() of.FeatureProvider {
-	return &Provider{}
+func NewProvider(host string) of.FeatureProvider {
+	return &Provider{
+		client: &internal.Client{
+			Cli:  &http.Client{},
+			Host: host,
+		},
+	}
 }
 
 func (*Provider) Metadata() of.Metadata {
@@ -37,7 +42,8 @@ func (p *Provider) BooleanEvaluation(
 	return of.BoolResolutionDetail{
 		Value: res.Bool.Value,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
-			Variant: res.Variant,
+			Variant:      res.Variant,
+			FlagMetadata: of.FlagMetadata(evalCtx),
 		},
 	}
 }
@@ -56,7 +62,8 @@ func (p *Provider) StringEvaluation(
 	return of.StringResolutionDetail{
 		Value: res.String.Value,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
-			Variant: res.Variant,
+			Variant:      res.Variant,
+			FlagMetadata: of.FlagMetadata(evalCtx),
 		},
 	}
 }
@@ -82,7 +89,8 @@ func (p *Provider) IntEvaluation(
 	return of.IntResolutionDetail{
 		Value: res.Int.Value,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
-			Variant: res.Variant,
+			Variant:      res.Variant,
+			FlagMetadata: of.FlagMetadata(evalCtx),
 		},
 	}
 }
@@ -101,7 +109,8 @@ func (p *Provider) ObjectEvaluation(
 	return of.InterfaceResolutionDetail{
 		Value: res.Object.Value,
 		ProviderResolutionDetail: of.ProviderResolutionDetail{
-			Variant: res.Variant,
+			Variant:      res.Variant,
+			FlagMetadata: of.FlagMetadata(evalCtx),
 		},
 	}
 }
