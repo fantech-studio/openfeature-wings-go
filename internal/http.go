@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	of "github.com/open-feature/go-sdk/openfeature"
 )
 
 type EvalRequest struct {
@@ -18,6 +20,7 @@ type (
 		Variant string       `json:"variant"`
 		Bool    *BoolValue   `json:"bool,omitempty"`
 		Int     *IntValue    `json:"int,omitempty"`
+		Float   *FloatValue  `json:"float,omitempty"`
 		String  *StringValue `json:"string,omitempty"`
 		Object  *ObjectValue `json:"object,omitempty"`
 	}
@@ -28,6 +31,10 @@ type (
 
 	IntValue struct {
 		Value int64 `json:"value"`
+	}
+
+	FloatValue struct {
+		Value float64 `json:"value"`
 	}
 
 	StringValue struct {
@@ -46,26 +53,47 @@ type Client struct {
 
 func (c *Client) Do(
 	ctx context.Context, path, method string, req *EvalRequest,
-) (*EvalResponse, error) {
+) (_ *EvalResponse, err error) {
 	reqBytes, err := json.Marshal(req)
 	if err != nil {
-		return nil, err
+		return
 	}
+
 	url := fmt.Sprintf("%s/%s", c.Host, path)
 	hReq, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
-		return nil, err
+		return
 	}
+
 	resp, err := c.Cli.Do(hReq)
 	if err != nil {
-		return nil, err
+		return
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		res := new(EvalResponse)
+		err = json.NewDecoder(resp.Body).Decode(res)
+		return res, err
 	}
-	res := &EvalResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(res); err != nil {
-		return nil, err
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return
 	}
-	return res, nil
+
+	resolutionErr := resolveStatusCode(resp.StatusCode)
+	return nil, resolutionErr(buf.String())
+}
+
+func resolveStatusCode(statusCode int) func(string) of.ResolutionError {
+	switch statusCode {
+	case http.StatusBadRequest:
+		return of.NewInvalidContextResolutionError
+	case http.StatusNotFound:
+		return of.NewFlagNotFoundResolutionError
+	default:
+		return of.NewGeneralResolutionError
+	}
 }
