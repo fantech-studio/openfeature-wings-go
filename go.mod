@@ -1,6 +1,6 @@
 module github.com/fantech-studio/openfeature-wings-go
 
-go 1.23.4
+go 1.25.0
 
 require github.com/open-feature/go-sdk v1.15.1
 
