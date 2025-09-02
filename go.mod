@@ -2,9 +2,9 @@ module github.com/fantech-studio/openfeature-wings-go
 
 go 1.23.4
 
-require github.com/open-feature/go-sdk v1.13.1
+require github.com/open-feature/go-sdk v1.15.1
 
 require (
-	github.com/go-logr/logr v1.4.2 // indirect
-	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
+	go.uber.org/mock v0.5.2 // indirect
 )
