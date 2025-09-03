@@ -53,21 +53,21 @@ type Client struct {
 
 func (c *Client) Do(
 	ctx context.Context, path, method string, req *EvalRequest,
-) (_ *EvalResponse, err error) {
+) (*EvalResponse, error) {
 	reqBytes, err := json.Marshal(req)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	url := fmt.Sprintf("%s/%s", c.Host, path)
 	hReq, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(reqBytes))
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	resp, err := c.Cli.Do(hReq)
 	if err != nil {
-		return
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -80,7 +80,7 @@ func (c *Client) Do(
 	buf := new(bytes.Buffer)
 	_, err = buf.ReadFrom(resp.Body)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	resolutionErr := resolveStatusCode(resp.StatusCode)
