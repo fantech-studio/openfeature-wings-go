@@ -238,5 +238,5 @@ func (p *Provider) ObjectEvaluation(
 }
 
 func (*Provider) Hooks() []of.Hook {
-	return make([]of.Hook, 0, 0)
+	return make([]of.Hook, 0)
 }

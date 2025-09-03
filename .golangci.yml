@@ -1,0 +1,65 @@
+version: "2"
+run:
+  concurrency: 4
+  tests: false
+linters:
+  enable:
+    - asciicheck
+    - bodyclose
+    - copyloopvar
+    - err113
+    - errorlint
+    - exhaustive
+    - forbidigo
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godox
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - misspell
+    - mnd
+    - nakedret
+    - nestif
+    - noctx
+    - nolintlint
+    - paralleltest
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - testpackage
+    - tparallel
+    - unconvert
+    - unparam
+    - whitespace
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - .github
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - .github
+      - third_party$
+      - builtin$
+      - examples$
