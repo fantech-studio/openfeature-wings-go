@@ -17,39 +17,52 @@ type Provider struct {
 	client internal.Client
 }
 
-type Option func(*options)
+type Option interface {
+	Apply(*internal.Config)
+}
 
-type options struct {
-	maxRetries    uint
-	retryInterval time.Duration
+func WithMaxRetries(maxRetries uint) Option {
+	return withMaxRetries(maxRetries)
+}
+
+type withMaxRetries uint
+
+func (w withMaxRetries) Apply(config *internal.Config) {
+	config.MaxRetries = uint(w)
+}
+
+func WithRetryInterval(retryInterval time.Duration) Option {
+	return withRetryInterval(retryInterval)
+}
+
+type withRetryInterval time.Duration
+
+func (w withRetryInterval) Apply(config *internal.Config) {
+	config.RetryInterval = time.Duration(w)
 }
 
 // NewProvider returns a new instance of the Provider for Wings implementing the Open Feature
 func NewProvider(host string, opts ...Option) of.FeatureProvider {
-	options := resolveOptions(opts...)
-	config := &internal.Config{
-		Host:          host,
-		MaxRetries:    options.maxRetries,
-		RetryInterval: options.retryInterval,
-	}
+	config := resolveOptions(opts...)
+	config.Host = host
 	return &Provider{
 		client: internal.NewClient(config),
 	}
 }
 
-func resolveOptions(opts ...Option) *options {
+func resolveOptions(opts ...Option) *internal.Config {
 	const (
 		defaultMaxRetries    = 3
 		defaultRetryInterval = 100 * time.Millisecond
 	)
-	dopts := &options{
-		maxRetries:    defaultMaxRetries,
-		retryInterval: defaultRetryInterval,
+	config := &internal.Config{
+		MaxRetries:    defaultMaxRetries,
+		RetryInterval: defaultRetryInterval,
 	}
 	for _, opt := range opts {
-		opt(dopts)
+		opt.Apply(config)
 	}
-	return dopts
+	return config
 }
 
 func (*Provider) Metadata() of.Metadata {
