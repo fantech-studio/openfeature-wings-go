@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 
@@ -13,17 +14,42 @@ import (
 var _ of.FeatureProvider = (*Provider)(nil)
 
 type Provider struct {
-	client *internal.Client
+	client internal.Client
+}
+
+type Option func(*options)
+
+type options struct {
+	maxRetries    uint
+	retryInterval time.Duration
 }
 
 // NewProvider returns a new instance of the Provider for Wings implementing the Open Feature
-func NewProvider(host string) of.FeatureProvider {
-	return &Provider{
-		client: &internal.Client{
-			Cli:  new(http.Client),
-			Host: host,
-		},
+func NewProvider(host string, opts ...Option) of.FeatureProvider {
+	options := resolveOptions(opts...)
+	config := &internal.Config{
+		Host:          host,
+		MaxRetries:    options.maxRetries,
+		RetryInterval: options.retryInterval,
 	}
+	return &Provider{
+		client: internal.NewClient(config),
+	}
+}
+
+func resolveOptions(opts ...Option) *options {
+	const (
+		defaultMaxRetries    = 3
+		defaultRetryInterval = 100 * time.Millisecond
+	)
+	dopts := &options{
+		maxRetries:    defaultMaxRetries,
+		retryInterval: defaultRetryInterval,
+	}
+	for _, opt := range opts {
+		opt(dopts)
+	}
+	return dopts
 }
 
 func (*Provider) Metadata() of.Metadata {
