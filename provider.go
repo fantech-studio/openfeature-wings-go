@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	of "github.com/open-feature/go-sdk/openfeature"
 
@@ -13,17 +14,55 @@ import (
 var _ of.FeatureProvider = (*Provider)(nil)
 
 type Provider struct {
-	client *internal.Client
+	client internal.Client
+}
+
+type Option interface {
+	apply(*internal.Config)
+}
+
+func WithMaxRetries(maxRetries uint) Option {
+	return withMaxRetries(maxRetries)
+}
+
+type withMaxRetries uint
+
+func (w withMaxRetries) apply(config *internal.Config) {
+	config.MaxRetries = uint(w)
+}
+
+func WithRetryInterval(retryInterval time.Duration) Option {
+	return withRetryInterval(retryInterval)
+}
+
+type withRetryInterval time.Duration
+
+func (w withRetryInterval) apply(config *internal.Config) {
+	config.RetryInterval = time.Duration(w)
 }
 
 // NewProvider returns a new instance of the Provider for Wings implementing the Open Feature
-func NewProvider(host string) of.FeatureProvider {
+func NewProvider(host string, opts ...Option) of.FeatureProvider {
+	config := resolveOptions(opts...)
+	config.Host = host
 	return &Provider{
-		client: &internal.Client{
-			Cli:  new(http.Client),
-			Host: host,
-		},
+		client: internal.NewClient(config),
 	}
+}
+
+func resolveOptions(opts ...Option) *internal.Config {
+	const (
+		defaultMaxRetries    = 3
+		defaultRetryInterval = 100 * time.Millisecond
+	)
+	config := &internal.Config{
+		MaxRetries:    defaultMaxRetries,
+		RetryInterval: defaultRetryInterval,
+	}
+	for _, opt := range opts {
+		opt.apply(config)
+	}
+	return config
 }
 
 func (*Provider) Metadata() of.Metadata {
