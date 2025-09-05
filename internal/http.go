@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
@@ -42,6 +42,7 @@ type (
 	StringValue struct {
 		Value string `json:"value"`
 	}
+
 	ObjectValue struct {
 		Value map[string]any `json:"value"`
 	}
@@ -77,10 +78,16 @@ func (c *client) Do(
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/%s", c.config.Host, path)
+	u, err := url.Parse(c.config.Host)
+	if err != nil {
+		return nil, err
+	}
+	u.Scheme = "https"
+	u = u.JoinPath(path)
+
 	var buf *bytes.Buffer
 	ope := func() (*EvalResponse, error) {
-		hReq, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(reqBytes))
+		hReq, err := http.NewRequestWithContext(ctx, method, u.String(), bytes.NewBuffer(reqBytes))
 		if err != nil {
 			return nil, err
 		}

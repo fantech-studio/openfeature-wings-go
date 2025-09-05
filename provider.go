@@ -18,7 +18,7 @@ type Provider struct {
 }
 
 type Option interface {
-	Apply(*internal.Config)
+	apply(*internal.Config)
 }
 
 func WithMaxRetries(maxRetries uint) Option {
@@ -27,7 +27,7 @@ func WithMaxRetries(maxRetries uint) Option {
 
 type withMaxRetries uint
 
-func (w withMaxRetries) Apply(config *internal.Config) {
+func (w withMaxRetries) apply(config *internal.Config) {
 	config.MaxRetries = uint(w)
 }
 
@@ -37,7 +37,7 @@ func WithRetryInterval(retryInterval time.Duration) Option {
 
 type withRetryInterval time.Duration
 
-func (w withRetryInterval) Apply(config *internal.Config) {
+func (w withRetryInterval) apply(config *internal.Config) {
 	config.RetryInterval = time.Duration(w)
 }
 
@@ -60,7 +60,7 @@ func resolveOptions(opts ...Option) *internal.Config {
 		RetryInterval: defaultRetryInterval,
 	}
 	for _, opt := range opts {
-		opt.Apply(config)
+		opt.apply(config)
 	}
 	return config
 }
