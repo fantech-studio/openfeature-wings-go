@@ -6,19 +6,18 @@ import (
 	"net/http"
 	"time"
 
-	of "github.com/open-feature/go-sdk/openfeature"
-
 	"github.com/fantech-studio/openfeature-wings-go/internal"
+	of "github.com/open-feature/go-sdk/openfeature"
 )
 
 var _ of.FeatureProvider = (*Provider)(nil)
 
 type Provider struct {
-	client internal.Client
+	client client
 }
 
 type Option interface {
-	apply(*internal.Config)
+	apply(*config)
 }
 
 func WithMaxRetries(maxRetries uint) Option {
@@ -27,8 +26,8 @@ func WithMaxRetries(maxRetries uint) Option {
 
 type withMaxRetries uint
 
-func (w withMaxRetries) apply(config *internal.Config) {
-	config.MaxRetries = uint(w)
+func (w withMaxRetries) apply(config *config) {
+	config.maxRetries = uint(w)
 }
 
 func WithRetryInterval(retryInterval time.Duration) Option {
@@ -37,27 +36,27 @@ func WithRetryInterval(retryInterval time.Duration) Option {
 
 type withRetryInterval time.Duration
 
-func (w withRetryInterval) apply(config *internal.Config) {
-	config.RetryInterval = time.Duration(w)
+func (w withRetryInterval) apply(config *config) {
+	config.retryInterval = time.Duration(w)
 }
 
 // NewProvider returns a new instance of the Provider for Wings implementing the Open Feature
 func NewProvider(host string, opts ...Option) of.FeatureProvider {
 	config := resolveOptions(opts...)
-	config.Host = host
+	config.host = host
 	return &Provider{
-		client: internal.NewClient(config),
+		client: newClient(config),
 	}
 }
 
-func resolveOptions(opts ...Option) *internal.Config {
+func resolveOptions(opts ...Option) *config {
 	const (
 		defaultMaxRetries    = 3
 		defaultRetryInterval = 100 * time.Millisecond
 	)
-	config := &internal.Config{
-		MaxRetries:    defaultMaxRetries,
-		RetryInterval: defaultRetryInterval,
+	config := &config{
+		maxRetries:    defaultMaxRetries,
+		retryInterval: defaultRetryInterval,
 	}
 	for _, opt := range opts {
 		opt.apply(config)
@@ -94,7 +93,7 @@ func (p *Provider) BooleanEvaluation(
 		FlagMetadata: of.FlagMetadata(evalCtx),
 	}
 
-	res, err := p.client.Do(ctx, path, http.MethodPost, reqBody)
+	res, err := p.client.do(ctx, path, http.MethodPost, reqBody)
 	if err != nil {
 		var e of.ResolutionError
 		if errors.As(err, &e) {
@@ -135,7 +134,7 @@ func (p *Provider) StringEvaluation(
 		FlagMetadata: of.FlagMetadata(evalCtx),
 	}
 
-	res, err := p.client.Do(ctx, path, http.MethodPost, reqBody)
+	res, err := p.client.do(ctx, path, http.MethodPost, reqBody)
 	if err != nil {
 		var e of.ResolutionError
 		if errors.As(err, &e) {
@@ -176,7 +175,7 @@ func (p *Provider) FloatEvaluation(
 		FlagMetadata: of.FlagMetadata(evalCtx),
 	}
 
-	res, err := p.client.Do(ctx, path, http.MethodPost, reqBody)
+	res, err := p.client.do(ctx, path, http.MethodPost, reqBody)
 	if err != nil {
 		var e of.ResolutionError
 		if errors.As(err, &e) {
@@ -217,7 +216,7 @@ func (p *Provider) IntEvaluation(
 		FlagMetadata: of.FlagMetadata(evalCtx),
 	}
 
-	res, err := p.client.Do(ctx, path, http.MethodPost, reqBody)
+	res, err := p.client.do(ctx, path, http.MethodPost, reqBody)
 	if err != nil {
 		var e of.ResolutionError
 		if errors.As(err, &e) {
@@ -258,7 +257,7 @@ func (p *Provider) ObjectEvaluation(
 		FlagMetadata: of.FlagMetadata(evalCtx),
 	}
 
-	res, err := p.client.Do(ctx, path, http.MethodPost, reqBody)
+	res, err := p.client.do(ctx, path, http.MethodPost, reqBody)
 	if err != nil {
 		var e of.ResolutionError
 		if errors.As(err, &e) {
