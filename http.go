@@ -1,4 +1,4 @@
-package internal
+package openfeaturewings
 
 import (
 	"bytes"
@@ -10,75 +10,41 @@ import (
 
 	"github.com/cenkalti/backoff/v5"
 	of "github.com/open-feature/go-sdk/openfeature"
+
+	"github.com/fantech-studio/openfeature-wings-go/internal"
 )
 
-type EvalRequest struct {
-	ID   string         `json:"id" validate:"required"`
-	Meta map[string]any `json:"meta"`
+type config struct {
+	host          string
+	maxRetries    uint
+	retryInterval time.Duration
 }
 
-type (
-	EvalResponse struct {
-		Variant string       `json:"variant"`
-		Bool    *BoolValue   `json:"bool,omitempty"`
-		Int     *IntValue    `json:"int,omitempty"`
-		Float   *FloatValue  `json:"float,omitempty"`
-		String  *StringValue `json:"string,omitempty"`
-		Object  *ObjectValue `json:"object,omitempty"`
-	}
-
-	BoolValue struct {
-		Value bool `json:"value"`
-	}
-
-	IntValue struct {
-		Value int64 `json:"value"`
-	}
-
-	FloatValue struct {
-		Value float64 `json:"value"`
-	}
-
-	StringValue struct {
-		Value string `json:"value"`
-	}
-
-	ObjectValue struct {
-		Value map[string]any `json:"value"`
-	}
-)
-
-type Config struct {
-	Host          string
-	MaxRetries    uint
-	RetryInterval time.Duration
+type client interface {
+	do(ctx context.Context, path, method string, req *internal.EvalRequest) (*internal.EvalResponse, error)
 }
 
-type Client interface {
-	Do(ctx context.Context, path, method string, req *EvalRequest) (*EvalResponse, error)
-}
-
-type client struct {
+type httpClient struct {
 	cli    *http.Client
-	config *Config
+	config *config
 }
 
-func NewClient(config *Config) Client {
-	return &client{
+func newClient(config *config) client {
+	return &httpClient{
 		cli:    new(http.Client),
 		config: config,
 	}
 }
 
-func (c *client) Do(
-	ctx context.Context, path, method string, req *EvalRequest,
-) (*EvalResponse, error) {
+func (c *httpClient) do(
+	ctx context.Context, path, method string, req *internal.EvalRequest,
+) (*internal.EvalResponse, error) {
 	reqBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	u, err := url.Parse(c.config.Host)
+	u, err := url.Parse(c.config.host)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +52,7 @@ func (c *client) Do(
 	u = u.JoinPath(path)
 
 	var buf *bytes.Buffer
-	ope := func() (*EvalResponse, error) {
+	ope := func() (*internal.EvalResponse, error) {
 		hReq, err := http.NewRequestWithContext(ctx, method, u.String(), bytes.NewBuffer(reqBytes))
 		if err != nil {
 			return nil, err
@@ -99,7 +65,7 @@ func (c *client) Do(
 		defer resp.Body.Close()
 
 		if resp.StatusCode == http.StatusOK {
-			var res *EvalResponse
+			var res *internal.EvalResponse
 			err = json.NewDecoder(resp.Body).Decode(res)
 			if err != nil {
 				return nil, err
@@ -122,8 +88,8 @@ func (c *client) Do(
 	}
 
 	res, err := backoff.Retry(ctx, ope,
-		backoff.WithMaxTries(c.config.MaxRetries),
-		backoff.WithBackOff(backoff.NewConstantBackOff(c.config.RetryInterval)))
+		backoff.WithMaxTries(c.config.maxRetries),
+		backoff.WithBackOff(backoff.NewConstantBackOff(c.config.retryInterval)))
 
 	return res, err
 }
