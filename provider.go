@@ -16,30 +16,6 @@ type Provider struct {
 	client client
 }
 
-type Option interface {
-	apply(*config)
-}
-
-func WithMaxRetries(maxRetries uint) Option {
-	return withMaxRetries(maxRetries)
-}
-
-type withMaxRetries uint
-
-func (w withMaxRetries) apply(config *config) {
-	config.maxRetries = uint(w)
-}
-
-func WithRetryInterval(retryInterval time.Duration) Option {
-	return withRetryInterval(retryInterval)
-}
-
-type withRetryInterval time.Duration
-
-func (w withRetryInterval) apply(config *config) {
-	config.retryInterval = time.Duration(w)
-}
-
 // NewProvider returns a new instance of the Provider for Wings implementing the Open Feature
 func NewProvider(host string, opts ...Option) of.FeatureProvider {
 	config := resolveOptions(opts...)
@@ -57,6 +33,7 @@ func resolveOptions(opts ...Option) *config {
 	config := &config{
 		maxRetries:    defaultMaxRetries,
 		retryInterval: defaultRetryInterval,
+		cli:           &http.Client{},
 	}
 	for _, opt := range opts {
 		opt.apply(config)
