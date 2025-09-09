@@ -16,8 +16,11 @@ import (
 
 type config struct {
 	host          string
+	cli           *http.Client
 	maxRetries    uint
 	retryInterval time.Duration
+	apiKey        string
+	apiKeyID      string
 }
 
 type client interface {
@@ -25,26 +28,39 @@ type client interface {
 }
 
 type httpClient struct {
-	cli    *http.Client
-	config *config
+	cli           *http.Client
+	host          string
+	maxRetries    uint
+	retryInterval time.Duration
+	apiKey        string
+	apiKeyID      string
 }
 
 func newClient(config *config) client {
 	return &httpClient{
-		cli:    new(http.Client),
-		config: config,
+		host:          config.host,
+		cli:           config.cli,
+		maxRetries:    config.maxRetries,
+		retryInterval: config.retryInterval,
+		apiKey:        config.apiKey,
+		apiKeyID:      config.apiKeyID,
 	}
 }
 
 func (c *httpClient) do(
 	ctx context.Context, path, method string, req *internal.EvalRequest,
 ) (*internal.EvalResponse, error) {
+	// #nosec G101
+	const (
+		apiKeyHeader   = "x-api-key"
+		apiKeyIDHeader = "x-api-key-id"
+	)
 	reqBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	u, err := url.Parse(c.config.host)
+	u, err := url.Parse(c.host)
 	if err != nil {
 		return nil, err
 	}
@@ -57,6 +73,9 @@ func (c *httpClient) do(
 		if err != nil {
 			return nil, err
 		}
+
+		hReq.Header.Add(apiKeyHeader, c.apiKey)
+		hReq.Header.Add(apiKeyIDHeader, c.apiKeyID)
 
 		resp, err := c.cli.Do(hReq)
 		if err != nil {
@@ -88,8 +107,8 @@ func (c *httpClient) do(
 	}
 
 	res, err := backoff.Retry(ctx, ope,
-		backoff.WithMaxTries(c.config.maxRetries),
-		backoff.WithBackOff(backoff.NewConstantBackOff(c.config.retryInterval)))
+		backoff.WithMaxTries(c.maxRetries),
+		backoff.WithBackOff(backoff.NewConstantBackOff(c.retryInterval)))
 
 	return res, err
 }
