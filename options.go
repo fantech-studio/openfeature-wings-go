@@ -29,7 +29,7 @@ func (w withRetryInterval) apply(config *config) {
 	config.retryInterval = time.Duration(w)
 }
 
-func WithCredentianls(creds *Credentials) Option {
+func WithCredentials(creds *Credentials) Option {
 	return (*withCredentials)(creds)
 }
 
