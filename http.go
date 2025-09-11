@@ -85,7 +85,7 @@ func (c *httpClient) do(
 
 		if resp.StatusCode == http.StatusOK {
 			var res *internal.EvalResponse
-			err = json.NewDecoder(resp.Body).Decode(res)
+			err = json.NewDecoder(resp.Body).Decode(&res)
 			if err != nil {
 				return nil, err
 			}
