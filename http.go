@@ -67,7 +67,7 @@ func (c *httpClient) do(
 	u.Scheme = "https"
 	u = u.JoinPath(path)
 
-	var buf *bytes.Buffer
+	buf := &bytes.Buffer{}
 	ope := func() (*internal.EvalResponse, error) {
 		hReq, err := http.NewRequestWithContext(ctx, method, u.String(), bytes.NewBuffer(reqBytes))
 		if err != nil {
@@ -98,6 +98,7 @@ func (c *httpClient) do(
 		}
 
 		resolutionErr := resolveStatusCode(resp.StatusCode)(buf.String())
+		buf.Reset()
 
 		if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusInternalServerError {
 			return nil, backoff.Permanent(resolutionErr)
