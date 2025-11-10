@@ -121,6 +121,8 @@ func resolveStatusCode(statusCode int) func(string) of.ResolutionError {
 	case http.StatusNotFound:
 		return of.NewFlagNotFoundResolutionError
 	default:
-		return of.NewGeneralResolutionError
+		return func(msg string) of.ResolutionError {
+			return of.NewGeneralResolutionError(msg)
+		}
 	}
 }
