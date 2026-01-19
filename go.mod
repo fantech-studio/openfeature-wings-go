@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.3
-	github.com/open-feature/go-sdk v1.17.0
+	github.com/open-feature/go-sdk v1.17.1
 )
 
 require (
