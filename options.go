@@ -54,3 +54,25 @@ type withHTTPClient struct{ cli *http.Client }
 func (w *withHTTPClient) apply(config *config) {
 	config.cli = w.cli
 }
+
+// WithInsecure disables transport security so that evaluation requests are sent
+// over plain HTTP instead of the default HTTPS. Any scheme present in the host
+// passed to [NewProvider] is ignored; this option alone determines whether
+// requests use https (the default) or http.
+//
+// Use it only for trusted environments, such as a wings endpoint exposed over
+// plain HTTP inside a cluster (for example, a development cluster). Without this
+// option the provider always uses HTTPS.
+//
+// WARNING: with transport security disabled, the credentials configured via
+// [WithCredentials] are transmitted over the network in plaintext. Never enable
+// this for endpoints reachable over an untrusted network.
+func WithInsecure() Option {
+	return withInsecure{}
+}
+
+type withInsecure struct{}
+
+func (withInsecure) apply(config *config) {
+	config.insecure = true
+}

@@ -21,6 +21,7 @@ type config struct {
 	retryInterval time.Duration
 	apiKey        string
 	apiKeyID      string
+	insecure      bool
 }
 
 type client interface {
@@ -34,6 +35,7 @@ type httpClient struct {
 	retryInterval time.Duration
 	apiKey        string
 	apiKeyID      string
+	insecure      bool
 }
 
 func newClient(config *config) client {
@@ -44,6 +46,7 @@ func newClient(config *config) client {
 		retryInterval: config.retryInterval,
 		apiKey:        config.apiKey,
 		apiKeyID:      config.apiKeyID,
+		insecure:      config.insecure,
 	}
 }
 
@@ -65,6 +68,9 @@ func (c *httpClient) do(
 		return nil, err
 	}
 	u.Scheme = "https"
+	if c.insecure {
+		u.Scheme = "http"
+	}
 	u = u.JoinPath(path)
 
 	buf := &bytes.Buffer{}
